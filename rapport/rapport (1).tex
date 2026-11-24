@@ -1,0 +1,429 @@
+% =====================================================================
+% Rapport de projet BD & DS (Partie B) - ENCG Settat
+% Compilation : pdfLaTeX (Overleaf : Menu > Compiler = pdfLaTeX)
+% Fichiers à ajouter à la racine du projet Overleaf :
+%   - logo_encg_settat.png   (logo de l'ENCG Settat)
+%   - photo_etudiant.jpg     (votre photo)
+% Les figures sont dans le dossier figures/.
+% Tout texte en rouge et italique est à compléter ou à vérifier.
+% =====================================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[french]{babel}
+\usepackage[a4paper,margin=1.8cm]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+\usepackage{caption}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
+
+\captionsetup{font=small,labelfont=sc,labelsep=colon}
+\captionsetup[table]{position=above,skip=6pt}
+\captionsetup[figure]{position=below,skip=4pt}
+\setlist[itemize]{label=\textbullet,leftmargin=1.5em,itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{leftmargin=1.8em,itemsep=2pt,topsep=3pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.1}
+
+% Texte à compléter ou à vérifier (rouge, italique)
+\newcommand{\todo}[1]{\textcolor{red}{\textit{[À compléter : #1]}}}
+\newcommand{\verif}[1]{\textcolor{red}{\textit{[À vérifier : #1]}}}
+\newcommand{\rouge}[1]{\textcolor{red}{\textit{#1}}}
+
+\begin{document}
+
+% ============================ PAGE DE GARDE ============================
+\begin{titlepage}
+\centering
+\vspace*{0.2cm}
+\IfFileExists{logo_encg_settat.png}%
+  {\includegraphics[height=3.2cm]{logo_encg_settat.png}}%
+  {\fbox{\parbox[c][3cm][c]{6.5cm}{\centering\small Logo de l’ENCG Settat\\[2pt]\texttt{\footnotesize logo\_encg\_settat.png}}}}
+
+\vspace{1.1cm}
+{\small Université Hassan 1\textsuperscript{er} de Settat\par}
+{\large\bfseries École Nationale de Commerce et de Gestion de Settat\par}
+{\small ENCG Settat\par}
+
+\vspace{1.6cm}
+\rule{\linewidth}{0.6pt}\par\vspace{0.4cm}
+{\small Cours BD \& DS : examen individuel (Partie B)\par}
+\vspace{0.2cm}
+{\large Rapport de projet de science des données appliqué à la finance\par}
+\vspace{0.5cm}
+{\Large\bfseries\itshape \textcolor{red}{F1}~: Prédiction du risque de défaut d’un crédit sur la base « Crédit Allemagne »\par}
+\vspace{0.4cm}
+\rule{\linewidth}{0.6pt}
+
+\vfill
+\begin{flushleft}
+\begin{minipage}[c]{0.70\textwidth}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{@{}lp{7.4cm}@{}}
+Réalisé par & Samid Oumaima \\
+Code Apogée & {23009055} \\
+Groupe et filière & {groupe 3}, S7 FIN \\
+Algorithme principal & 8 : régression logistique
+Enseignant(e) & {LAGHLIMI ABDRRAHIM} \\
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.26\textwidth}
+\centering
+\IfFileExists{photo_etudiant.jpg}%
+  {\includegraphics[height=4.6cm]{photo_etudiant.jpg}}%
+  {\fbox{\parbox[c][4.6cm][c]{3.6cm}{\centering\small\rouge{Photo de l’étudiant(e)}\\[3pt]\texttt{\footnotesize photo\_etudiant.jpg}}}}
+\end{minipage}
+\end{flushleft}
+
+\vspace{0.8cm}
+\centering
+\textbf{Dépôt GitHub :} {https://github.com/SAMIDOUMAIMA/23009055-SAMID-OUMAIMA-FIN3-S7.git}
+
+\vfill
+Année universitaire 2026-2027\par
+{\small Remis le 24 novembre 2026\par}
+\vspace{0.5cm}
+\end{titlepage}
+
+% ============================ 1 INTRODUCTION ============================
+\section{Introduction}
+\textbf{Contexte.} Un établissement de crédit doit décider d’accorder ou non un prêt à partir des informations connues au moment de la demande. Refuser un bon client fait perdre une marge ; accorder un crédit à un mauvais payeur fait perdre du capital. Un score de risque aide le chargé de clientèle et le service risque à accepter, refuser ou demander une garantie, et à classer les dossiers à examiner en priorité.
+
+\textbf{Problématique.} À partir des 20 caractéristiques connues à la demande de crédit, peut-on repérer les clients à \og mauvais risque \fg{} nettement mieux qu’une règle triviale, et quel algorithme y parvient le mieux ?
+
+\textbf{Objectif mesurable.} Obtenir un F1-score de la classe \og mauvais risque \fg{} supérieur ou égal à $0{,}55$ sur un jeu de test de 20\,\% des dossiers (200 clients, tirage stratifié, graine 42), contre $0{,}462$ pour la référence naïve \og tout client est classé mauvais risque \fg{}. Ce seuil a été fixé avant de voir les résultats de test.
+
+\textbf{Nature du problème.} Classification binaire déséquilibrée : la variable à prédire n’a que deux modalités (700 bons risques, 300 mauvais risques). Le F1 de la classe minoritaire est préféré à l’exactitude, car la règle \og tout le monde est bon \fg{} atteint déjà $70\,\%$ d’exactitude.
+
+\textbf{Organisation du rapport.} La section~\ref{sec:etat} présente l’état de l’art et la section~\ref{sec:liens} les travaux liés. Les sections~\ref{sec:data} à~\ref{sec:proto} décrivent les données, leur exploration, leur préparation, l’algorithme retenu et le protocole expérimental. La section~\ref{sec:res} présente les résultats, discutés en section~\ref{sec:disc}, avant la conclusion (section~\ref{sec:concl}).
+
+% ============================ 2 ETAT DE L'ART ============================
+\section{État de l’art}\label{sec:etat}
+Le scoring de crédit est un problème classique de classification binaire (bon ou mauvais payeur). Les méthodes statistiques classiques, analyse discriminante et régression logistique, sont d’usage courant en banque depuis longtemps \cite{hand}. L’apprentissage automatique y ajoute des modèles non linéaires (forêts aléatoires, boosting, machines à vecteurs de support). Les comparaisons à grande échelle montrent que les méthodes simples restent très compétitives \cite{baesens} et que les forêts aléatoires et le gradient boosting figurent parmi les meilleures méthodes, y compris avec des classes déséquilibrées \cite{brown}. Lessmann et al. \cite{lessmann} actualisent ce type de comparaison avec des méthodes plus récentes.
+
+\begin{table}[H]
+\centering\small
+\caption{Panorama des approches pour ce type de problème}
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}YYYl@{}}
+\toprule
+Approche & Principe & Atouts & Limites & Réf. \\
+\midrule
+Référence naïve du domaine & Classer tous les clients dans la même classe & Aucun apprentissage ; point de comparaison minimal & Ne distingue aucun client ; l’exactitude de $70\,\%$ est trompeuse & -- \\[3pt]
+Approche classique (régression logistique, analyse discriminante) & Score linéaire des caractéristiques, converti en probabilité de défaut & Lisible, stable, probabilité exploitable pour fixer un seuil & Relations linéaires ; interactions à construire à la main & \cite{hand,baesens} \\[3pt]
+Apprentissage automatique (forêts, boosting, SVM) & Modèles non linéaires appris sur les données & Captent des interactions ; très bons résultats en comparaison & Moins lisibles ; réglage plus lourd ; risque de sur-apprentissage sur petit échantillon & \cite{brown,lessmann} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================ 3 TRAVAUX LIES ============================
+\section{Travaux liés}\label{sec:liens}
+\begin{table}[H]
+\centering\small
+\caption{Travaux liés}
+\begin{tabularx}{\linewidth}{@{}p{2.2cm}YYYY@{}}
+\toprule
+Travail & Données & Méthode & Résultat principal & Différence avec ce travail \\
+\midrule
+Baesens et al., 2003 \cite{baesens} & 8 jeux de scoring réels (institutions financières du Benelux et du Royaume-Uni) & Comparaison de classifieurs (régression logistique, analyse discriminante, KNN, arbres, réseaux de neurones, SVM, LS-SVM) ; exactitude, AUC, tests statistiques & LS-SVM et réseaux de neurones très performants ; régression logistique et analyse discriminante \og très bonnes \fg{} aussi & Un seul jeu public de 1\,000 clients ; F1 de la classe minoritaire et seuil de décision en plus de l’AUC \\[3pt]
+Brown et Mues, 2012 \cite{brown} & 5 jeux de scoring réels, déséquilibre accentué par sous-échantillonnage & Comparaison de classifieurs (régression logistique, arbres, forêts, gradient boosting, LS-SVM, KNN) ; AUC, tests de Friedman et de Nemenyi & Forêts aléatoires et gradient boosting très performants et plus robustes au déséquilibre ; KNN et arbre C4.5 nettement moins bons en fort déséquilibre & Déséquilibre naturel (30\,\%) non modifié ; validation croisée et 100 découpages à la place des tests statistiques \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Positionnement.} Ce travail reprend la comparaison de plusieurs familles d’algorithmes et l’usage de l’AUC, complétée par une mesure adaptée à la classe minoritaire (F1). Il apporte, sur un jeu public de 1\,000 dossiers, un seuil de décision choisi sans le jeu de test et une mesure de la stabilité du résultat selon le découpage des données.
+
+% ============================ 4 JEU DE DONNEES ============================
+\section{Jeu de données}\label{sec:data}
+\begin{itemize}
+\item \textbf{Nom et source :} \emph{Statlog (German Credit Data)}, UCI Machine Learning Repository, Hans Hofmann \cite{hofmann}, \url{https://doi.org/10.24432/C5NC77}. Version francisée fournie avec le cours : \texttt{base\_credit\_allemagne\_1.xlsx} (feuilles \texttt{base\_lisible}, \texttt{base\_origine}, \texttt{dictionnaire}).
+\item \textbf{Date d’extraction :} {17/11/2026}
+\item \textbf{Licence ou conditions d’utilisation :} Creative Commons Attribution 4.0 (CC BY 4.0), selon la fiche UCI.
+\item \textbf{Taille :} 1\,000 observations et 21 variables (20 explicatives et la cible). Aucune variable de date : coupe transversale, sans fréquence ; la période de collecte n’est pas précisée.
+\item \textbf{Unité d’observation :} une demande de crédit d’un particulier.
+\item \textbf{Variable cible :} \texttt{mauvais\_risque (0/1)} : 1 pour un mauvais risque (300 clients), 0 pour un bon risque (700). La colonne texte \texttt{risque} en est le libellé et la colonne \texttt{class} de \texttt{base\_origine} le codage d’origine (2 = mauvais) ; les deux sont cohérentes (vérifié).
+\item \textbf{Adéquation :} la cible est explicite, les variables sont celles qu’un chargé de clientèle connaît à la demande, et le déséquilibre ($30\,\%$ de mauvais risques) est réaliste : le jeu permet de répondre à la problématique.
+\item \textbf{Limites :} aucune valeur manquante ; déséquilibre $70/30$ ; base ancienne avec des montants en Deutsche Mark non actualisés ; seulement 1\,000 clients ; la base ne contient vraisemblablement que des clients ayant obtenu un crédit (biais de sélection) ; présence de variables sensibles (statut personnel et sexe, âge, travailleur étranger).
+\end{itemize}
+
+\begin{table}[H]
+\centering\small
+\caption{Dictionnaire des principales variables}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{3.5cm}Y>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{1.9cm}r@{}}
+\toprule
+Variable & Description & Type & Unité & Rôle & Manq. (\%) \\
+\midrule
+\texttt{mauvais\_risque} & 1 si le client est un mauvais payeur, 0 sinon & binaire & -- & cible & 0 \\
+\texttt{statut\_compte} & Situation du compte courant & catégorielle (4) & tranches en DM & explicative & 0 \\
+\texttt{duree\_mois} & Durée du crédit & numérique & mois & explicative & 0 \\
+\texttt{montant} & Montant du crédit & numérique & DM & explicative & 0 \\
+\texttt{historique\_credit} & Historique de remboursement & catégorielle (5) & -- & explicative & 0 \\
+\texttt{epargne} & Niveau d’épargne & catégorielle (5) & tranches en DM & explicative & 0 \\
+\texttt{taux\_mensualite} & Mensualité en \% du revenu disponible & numérique & échelle 1 à 4 & explicative & 0 \\
+\texttt{age} & Âge du client & numérique & années & explicative & 0 \\
+\texttt{travailleur\_etranger} & Client travailleur étranger & binaire & -- & explicative & 0 \\
+\texttt{n°} & Identifiant de la demande & entier & -- & écartée (identifiant) & 0 \\
+\texttt{mensualite\_estimee} (créée) & $\text{montant}/\text{durée}$ & numérique & DM par mois & explicative & 0 \\
+\texttt{log\_montant} (créée) & $\ln(1+\text{montant})$ & numérique & ln(DM) & explicative & 0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================ 5 EXPLORATION ============================
+\section{Exploration}\label{sec:expl}
+\textbf{Statistiques descriptives.} La durée moyenne des crédits est de $20{,}9$ mois (écart-type $12{,}1$ ; de 4 à 72 mois). Le montant moyen est de $3\,271$ DM (écart-type $2\,823$) pour une médiane de $2\,320$ DM et un maximum de $18\,424$ DM : la distribution est très asymétrique. L’âge moyen est de $35{,}5$ ans (de 19 à 75 ans). Les classes sont réparties en 700 bons risques ($70\,\%$) et 300 mauvais risques ($30\,\%$). Les variables catégorielles ont de 2 à 10 modalités.
+
+\textbf{Qualité des données.} Aucune valeur manquante et aucun doublon (hors identifiant). Valeurs atypiques détectées par la règle de l’écart interquartile ($1{,}5\times$IQR) : 70 durées ($7\,\%$), 72 montants ($7\,\%$) et 23 âges ($2\,\%$). Elles sont \textbf{conservées} : ce sont des dossiers réels (gros crédit, crédit long, client âgé), et en finance une valeur extrême est souvent réelle et informative ; les supprimer retirerait des dossiers à risque. L’asymétrie du montant est traitée par un logarithme (section~\ref{sec:prep}). Trois modalités rares de \texttt{objet\_credit} (moins de 20 clients) sont conservées.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/fig1_taux_par_modalite.png}
+\caption{Taux de mauvais risque selon le statut du compte courant et l’historique de crédit}
+\end{figure}
+
+\textbf{Lecture de la figure 1.} Le taux de mauvais risque va de $12\,\%$ (pas de compte courant) à $49\,\%$ (compte inférieur à 0 DM) pour une moyenne de $30\,\%$ : le statut du compte est très discriminant. L’historique est moins intuitif : les 293 clients \og compte critique / crédits ailleurs \fg{} ne sont que $17\,\%$ à être mauvais risque, contre $32\,\%$ pour les crédits remboursés normalement. C’est une association propre à ce jeu (probable effet de sélection), pas une règle causale.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{figures/fig2_montant_correlations.png}
+\caption{Montant du crédit selon le risque (échelle logarithmique) et corrélations des variables numériques}
+\end{figure}
+
+\textbf{Lecture de la figure 2.} Les boîtes se chevauchent (médianes de $2\,244$ DM pour les bons risques et $2\,575$ DM pour les mauvais) : la différence de montant vient surtout de la queue haute des gros crédits chez les mauvais risques. La durée et le montant sont liés (corrélation $0{,}62$, ce qui est logique), alors que leur corrélation avec la cible reste faible ($0{,}21$ et $0{,}15$) : aucune variable ne suffit seule, il faut les combiner. D’autres graphiques sont en annexe~B.
+
+% ============================ 6 PREPARATION ============================
+\section{Préparation}\label{sec:prep}
+\begin{itemize}
+\item \textbf{Nettoyage :} suppression de \texttt{n°} (identifiant sans valeur prédictive) et de \texttt{risque} (cible recopiée en texte : fuite de données). Aucune valeur manquante, donc pas d’imputation ; les valeurs atypiques sont conservées (section~\ref{sec:expl}).
+\item \textbf{Variables créées :} \texttt{mensualite\_estimee} $=\text{montant}/\text{durée}$, qui approche la charge mensuelle de remboursement en DM, et \texttt{log\_montant} $=\ln(1+\text{montant})$, qui réduit l’asymétrie du montant (formules dans le tableau~3). Elles sont calculées ligne par ligne, donc sans fuite.
+\item \textbf{Encodage et mise à l’échelle :} encodage \emph{one-hot} des 13 variables catégorielles (63 colonnes au total), car leurs modalités n’ont pas d’ordre fiable. La standardisation (moyenne nulle, écart-type 1) est \emph{nécessaire} pour la régression logistique : sans elle, la régularisation pénaliserait différemment le montant (en milliers de DM) et les indicatrices 0/1. Elle est inutile pour les arbres, les forêts, le boosting et Naive Bayes.
+\item \textbf{Découpage :} 80\,\% d’apprentissage et 20\,\% de test, stratifié sur la cible, graine 42.
+\end{itemize}
+
+\textbf{Prévention des fuites.}
+\begin{itemize}[label=$\boxtimes$,leftmargin=1.8em]
+\item Standardisation ajustée sur l’apprentissage seulement, dans un \texttt{Pipeline} (et pli par pli en validation croisée).
+\item Découpage chronologique : sans objet, les données ne sont pas datées ; le découpage est aléatoire et stratifié.
+\item Variables construites avec les seules informations de la demande (aucune information postérieure) ; pas d’horizon de prévision.
+\item Aucune variable ne contient la cible, même indirectement : la colonne \texttt{risque} est supprimée.
+\item Jeu de test lu à la fin : hyperparamètres et seuil sont fixés en validation croisée, sans lui. Le notebook affiche aussi, à titre d’illustration, les performances au test pour quelques seuils.
+\end{itemize}
+\textbf{Vérification de l’alignement.} Sans dates, l’alignement entre variables et cible est vérifié par la comparaison des feuilles \texttt{base\_lisible} et \texttt{base\_origine} (cible identique) et par la conservation de l’index des lignes dans le découpage.
+
+% ============================ 7 ALGORITHME ============================
+\section{Algorithme}\label{sec:algo}
+\textbf{Choix.} La régression logistique (algorithme n°8 du support de cours \cite{cours} ; \verif{numéro dans l’annexe A de l’énoncé}). Raisons : (i) c’est une méthode de référence du scoring de crédit et ses coefficients se lisent, ce qui compte pour une décision d’octroi \cite{hand} ; (ii) elle reste très performante dans les comparaisons \cite{baesens} ; (iii) elle fournit une probabilité, donc un seuil réglable selon le coût d’un défaut ; (iv) en validation croisée, ses performances (F1 0{,}492 $\pm$ 0{,}100, AUC 0{,}760 $\pm$ 0{,}057) sont proches de celles des meilleurs algorithmes, avec des écarts inférieurs à un écart-type. Le gradient boosting (n°14), meilleur en validation croisée (F1 $0{,}537$), a été écarté comme algorithme principal : l’écart n’est pas significatif, il est moins lisible et demande plus d’hyperparamètres. Il sert de comparaison avec sept autres algorithmes (annexe~B).
+
+\textbf{Principe.} Le modèle estime la probabilité de défaut par une sigmoïde d’une combinaison linéaire des variables standardisées, puis classe le client en \og mauvais risque \fg{} si cette probabilité dépasse un seuil $s$. L’apprentissage minimise une perte logistique pénalisée (L2) par le solveur \texttt{lbfgs}. Implémentation : \texttt{LogisticRegression} de scikit-learn \cite{sklearn}.
+
+\textbf{Formule essentielle.}
+\begin{equation}
+\hat y=\mathbb 1\!\left[\,\sigma\!\left(b+\mathbf w^{\top}\mathbf x\right)\ge s\right],\qquad \sigma(z)=\frac{1}{1+e^{-z}}
+\end{equation}
+où $\mathbf x$ est le vecteur des $p=63$ variables standardisées d’un client, $\mathbf w$ le vecteur des coefficients, $b$ la constante, $\sigma(\cdot)$ la probabilité estimée de défaut, $s$ le seuil de décision et $\hat y\in\{0,1\}$ la classe prédite. Les paramètres $(\mathbf w,b)$ minimisent
+\begin{equation}
+\frac12\lVert\mathbf w\rVert^{2}+C\sum_{i=1}^{n}\ln\!\left(1+e^{-\tilde y_i\,(b+\mathbf w^{\top}\mathbf x_i)}\right),\qquad \tilde y_i\in\{-1,+1\}.
+\end{equation}
+
+\textbf{Paramètres appris.} Les 63 coefficients $\mathbf w$ et la constante $b$. Le coefficient $C$ et le seuil $s$ ne sont pas appris : ce sont des hyperparamètres.
+
+\begin{table}[H]
+\centering\small
+\caption{Hyperparamètres étudiés}
+\begin{tabularx}{\linewidth}{@{}lYp{3.6cm}l@{}}
+\toprule
+Hyperparamètre & Rôle et effet attendu & Valeurs testées & Valeur retenue \\
+\midrule
+$C$ & Inverse de la force de la pénalisation L2 : plus $C$ est petit, plus les coefficients sont contraints & 0,01 ; 0,03 ; 0,1 ; 0,2 ; 0,5 ; 1 ; 3 ; 10 & 0,2 \\
+Seuil $s$ & Compromis entre rappel et précision de la classe \og mauvais risque \fg{} & 0,15 à 0,70 (pas de 0,05) & $0{,}25$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+$C=0{,}2$ est la valeur du support de cours ; le F1 en validation croisée est presque identique pour $C$ entre $0{,}1$ et $10$ (annexe~B), et seule une régularisation très forte ($C=0{,}01$) dégrade le modèle. Le seuil retenu maximise le F1 sur les probabilités hors-échantillon de l’apprentissage.
+
+% ============================ 8 PROTOCOLE ============================
+\section{Protocole expérimental}\label{sec:proto}
+\begin{table}[H]
+\centering\small
+\caption{Découpage des données}
+\begin{tabular}{@{}llr@{}}
+\toprule
+Ensemble & Période ou proportion & Observations \\
+\midrule
+Apprentissage & 80\,\% des dossiers, tirage stratifié & 800 \\
+Validation & validation croisée stratifiée à 5 plis, dans l’apprentissage & 160 par pli \\
+Test & 20\,\% des dossiers, tirage stratifié & 200 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{itemize}
+\item \textbf{Référence naïve :} classer tous les clients en \og mauvais risque \fg{} (F1 $=0{,}462$). Elle est pertinente car c’est la règle de F1 maximal qui n’utilise aucune information sur les clients : tout modèle utile doit la dépasser nettement.
+\item \textbf{Validation :} \texttt{StratifiedKFold} à 5 plis (graine 42) sur l’apprentissage ; 8 valeurs de $C$ et 12 valeurs du seuil essayées.
+\item \textbf{Métrique principale :} F1 de la classe \og mauvais risque \fg{} (sans unité, entre 0 et 1), moyenne harmonique de la précision et du rappel : elle convient à une classe minoritaire où l’exactitude est trompeuse.
+\item \textbf{Métriques secondaires :} AUC-ROC (qualité du classement des clients, indépendante du seuil) et rappel.
+\item \textbf{Graine aléatoire :} 42.
+\end{itemize}
+
+% ============================ 9 RESULTATS ============================
+\section{Résultats}\label{sec:res}
+\textbf{Lecture des résultats.} Au seuil par défaut de $0{,}5$, la régression logistique obtient sur le test un F1 de $0{,}625$ (rappel $0{,}583$, précision $0{,}673$, exactitude $0{,}790$) et une AUC de $0{,}810$, contre $0{,}462$ pour la référence naïve (tableau~6) : l’objectif ($0{,}55$) est atteint sur ce découpage. Avec le seuil $0{,}25$ choisi en validation croisée, le rappel monte à $0{,}833$ et le F1 à $0{,}637$, mais $48{,}5\,\%$ des clients sont refusés (contre $26\,\%$ à $0{,}5$). La figure~3 montre la matrice de confusion à $0{,}5$.
+
+\begin{table}[H]
+\centering\small
+\caption{Comparaison de la référence naïve et du modèle}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+& \multicolumn{2}{c}{F1 (mauvais risque)} & \multicolumn{2}{c}{AUC-ROC} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Modèle & Validation & Test & Validation & Test \\
+\midrule
+Référence : règle naïve & 0{,}462 $\pm$ 0{,}000 & 0{,}462 & 0{,}500 $\pm$ 0{,}000 & 0{,}500 \\
+Régression logistique, seuil $0{,}5$ & 0{,}492 $\pm$ 0{,}100 & 0{,}625 & 0{,}760 $\pm$ 0{,}057 & 0{,}810 \\
+Régression logistique, seuil $0{,}25$ & 0{,}571 $\pm$ 0{,}048 & 0{,}637 & 0{,}760 $\pm$ 0{,}057 & 0{,}810 \\
+\bottomrule
+\end{tabular}
+
+\footnotesize Validation : moyenne $\pm$ écart-type sur les 5 plis. Le F1 de validation au seuil $0{,}25$ est optimiste, car ce seuil a été choisi sur les mêmes prédictions hors-échantillon.
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.45\linewidth]{figures/fig3_matrice_confusion.png}
+\caption{Matrice de confusion de la régression logistique sur le jeu de test (seuil $0{,}5$)}
+\end{figure}
+
+\textbf{Analyse des erreurs.} Sur 60 mauvais payeurs du test, 35 sont détectés et \textbf{25 passent inaperçus} (faux négatifs, les erreurs les plus coûteuses pour la banque) ; 17 bons clients sur 140 sont refusés à tort. Les faux négatifs ont des crédits plus courts et plus petits (21 mois et $3\,645$ DM en moyenne) que les mauvais payeurs détectés (30 mois et $5\,396$ DM), et ont surtout un compte à 0--200 DM ou pas de compte : le modèle repère les gros dossiers à compte débiteur, pas les mauvais payeurs \og discrets \fg. Les effectifs sont petits, ce constat reste indicatif.
+
+\begin{table}[H]
+\centering\small
+\caption{Prédictions sur des observations non utilisées pour l’apprentissage (seuil $0{,}5$)}
+\begin{tabularx}{\linewidth}{@{}lllY@{}}
+\toprule
+Observation & Prédiction & Valeur réelle & Commentaire \\
+\midrule
+Dossier n°\,918 & mauvais risque ($p=0{,}94$) & mauvais risque & 14\,896 DM sur 6 mois, compte inférieur à 0 DM, épargne inférieure à 100 DM : bien détecté \\
+Dossier n°\,191 & bon risque ($p=0{,}02$) & mauvais risque & Pas de compte courant, épargne d’au moins 1\,000 DM : profil rassurant, défaut non détecté (faux négatif) \\
+Dossier n°\,819 & mauvais risque ($p=0{,}89$) & bon risque & 15\,857 DM sur 36 mois, compte inférieur à 0 DM : profil risqué mais remboursé (faux positif) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================ 10 DISCUSSION ============================
+\section{Discussion des résultats}\label{sec:disc}
+\textbf{Réponse à l’objectif.} L’objectif fixé dans l’introduction est \textbf{atteint sur le découpage de référence} (F1 test $0{,}625\ge0{,}55$), mais \textbf{non confirmé de façon robuste} : sur 100 découpages aléatoires, le F1 moyen est de $0{,}545$ ($\pm\,0{,}050$, de $0{,}436$ à $0{,}654$) et le seuil de $0{,}55$ n’est dépassé que dans 47\,\% des cas ; en validation croisée, le F1 au seuil $0{,}5$ est de $0{,}492$. Le F1 de $0{,}625$ est donc un bon tirage ; ce qui est solide, c’est la capacité à classer les clients (AUC test moyenne $0{,}778\pm0{,}032$).
+
+\textbf{Interprétation.} Le modèle fait nettement mieux que la référence parce que plusieurs caractéristiques sont associées au défaut. Coefficients les plus forts (variables standardisées) : durée du crédit ($+0{,}39$), taux de mensualité ($+0{,}36$), montant ($+0{,}35$), compte inférieur à 0 DM ($+0{,}32$), patrimoine inconnu ($+0{,}30$), épargne inférieure à 100 DM ($+0{,}23$) ; à l’inverse, l’absence de compte courant ($-0{,}41$) et l’historique \og compte critique \fg{} ($-0{,}27$) sont associés à moins de défaut. Ce sont des associations, pas des causes : les deux derniers signes sont contre-intuitifs et reflètent sans doute la sélection des clients de la base.
+
+\textbf{Surapprentissage et généralisation.} Le F1 d’apprentissage ($0{,}587$, AUC $0{,}834$) est proche de celui du test ($0{,}625$, AUC $0{,}810$) : pas de surapprentissage marqué, ce qui est attendu d’un modèle linéaire régularisé ($C=0{,}2$). L’écart observé entre validation croisée, apprentissage et test vient surtout de la variabilité de l’échantillon (60 mauvais risques dans le test), comme le montre la dispersion sur 100 graines.
+
+\textbf{Comparaison avec les travaux liés.} Les résultats sont cohérents avec \cite{baesens} : la régression logistique reste compétitive face à des modèles plus complexes (annexe~B : F1 test $0{,}547$ pour le gradient boosting, $0{,}560$ pour Naive Bayes, $0{,}545$ pour le SVM). Ils sont aussi cohérents avec \cite{brown} pour l’AUC (forêt aléatoire : 0{,}79 en validation croisée, comparable aux meilleurs), mais pas pour le F1 au seuil $0{,}5$ : la forêt et l’arbre (F1 $0{,}380$ et $0{,}386$) prédisent surtout la classe majoritaire, ce qui est un problème de seuil et non de classement. Sur 1\,000 clients, aucun écart entre les quatre meilleurs algorithmes n’est significatif.
+
+\textbf{Limites et biais.} 1\,000 clients et 60 mauvais risques dans le test ; base ancienne en Deutsche Mark ; aucune période de test séparée ; biais de sélection probable (seuls les clients acceptés sont observés). Le modèle utilise le statut personnel (sexe), l’âge et le statut de travailleur étranger : dans un vrai scoring, leur usage poserait un problème de non-discrimination. Hyperparamètres du support non optimisés par algorithme.
+
+\textbf{Pistes d’amélioration.} (1) Répéter la validation croisée et donner des intervalles de confiance, puis fixer le seuil à partir d’une matrice de coûts (coût d’un défaut contre coût d’un refus). (2) Retirer les variables sensibles, contrôler l’équité du modèle et tester des données plus récentes avec un découpage temporel.
+
+% ============================ 11 CONCLUSION ============================
+\section{Conclusion}\label{sec:concl}
+Oui, les informations connues à la demande permettent de repérer les mauvais risques nettement mieux qu’une règle triviale : la régression logistique atteint une AUC de $0{,}810$ et un F1 de $0{,}625$ sur le test de référence (objectif $0{,}55$, référence $0{,}462$). Le résultat est toutefois fragile : sur 100 découpages, le F1 moyen est de $0{,}545$, et au seuil de $0{,}5$ 25 mauvais payeurs sur 60 passent inaperçus. Ce travail apporte une comparaison reproductible de plusieurs algorithmes sur un jeu public, avec un seuil choisi sans le test ; la suite logique est de fixer ce seuil à partir des coûts réels des erreurs et de retirer les variables sensibles avant tout usage.
+
+% ============================ REFERENCES ============================
+\section*{Références et citations}
+{\renewcommand{\section}[2]{}%
+\begin{thebibliography}{9}
+\bibitem{hofmann} H. Hofmann, \og Statlog (German Credit Data) \fg{}, UCI Machine Learning Repository, 1994. \url{https://doi.org/10.24432/C5NC77} (fiche consultée en novembre 2026).
+\bibitem{hand} D. J. Hand et W. E. Henley, \og Statistical classification methods in consumer credit scoring: a review \fg{}, \emph{Journal of the Royal Statistical Society, Series A}, vol.~160, n°~3, p.~523-541, 1997. \verif{référence citée de mémoire, à contrôler}
+\bibitem{baesens} B. Baesens, T. Van Gestel, S. Viaene, M. Stepanova, J. Suykens et J. Vanthienen, \og Benchmarking state-of-the-art classification algorithms for credit scoring \fg{}, \emph{Journal of the Operational Research Society}, vol.~54, n°~6, p.~627-635, 2003. \url{https://doi.org/10.1057/palgrave.jors.2601545}
+\bibitem{brown} I. Brown et C. Mues, \og An experimental comparison of classification algorithms for imbalanced credit scoring data sets \fg{}, \emph{Expert Systems with Applications}, vol.~39, n°~3, p.~3446-3453, 2012. \url{https://doi.org/10.1016/j.eswa.2011.09.033}
+\bibitem{lessmann} S. Lessmann, B. Baesens, H.-V. Seow et L. C. Thomas, \og Benchmarking state-of-the-art classification algorithms for credit scoring: An update of research \fg{}, \emph{European Journal of Operational Research}, vol.~247, n°~1, p.~124-136, 2015. \url{https://doi.org/10.1016/j.ejor.2015.05.030}
+\bibitem{sklearn} F. Pedregosa et al., \og Scikit-learn : Machine Learning in Python \fg{}, \emph{Journal of Machine Learning Research}, vol.~12, p.~2825-2830, 2011.
+\bibitem{cours} Support du cours BD \& DS, notebook Tp\_ML.ipynb, ENCG-2026.
+\end{thebibliography}}
+
+% ============================ ANNEXES ============================
+\appendix
+\section{Reproduction}
+Version corrigée : étiquette \texttt{remise-finale} du dépôt \todo{https://github.com/identifiant/CodeApogee-Nom-Groupe}.
+\begin{enumerate}
+\item Cloner le dépôt : \texttt{git clone} suivi du lien ci-dessus.
+\item Installer les dépendances : \texttt{pip install -r requirements.txt}.
+\item Exécuter \texttt{notebooks/projet\_FXX.ipynb} avec \og Redémarrer et tout exécuter \fg{} (les données sont lues dans \texttt{data/raw/}).
+\end{enumerate}
+
+\section{Tableaux et figures complémentaires}
+\begin{table}[H]
+\centering\footnotesize
+\caption{Comparaison des algorithmes (validation croisée à 5 plis sur l’apprentissage, puis test)}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Algorithme & F1 validation & F1 test & Rappel & Précision & AUC validation & AUC test \\
+\midrule
+Régression logistique & 0{,}492 $\pm$ 0{,}100 & 0{,}625 & 0{,}58 & 0{,}67 & 0{,}760 $\pm$ 0{,}057 & 0{,}810 \\
+Naive Bayes & 0{,}535 $\pm$ 0{,}092 & 0{,}560 & 0{,}58 & 0{,}54 & 0{,}776 $\pm$ 0{,}043 & 0{,}785 \\
+Gradient Boosting & 0{,}537 $\pm$ 0{,}072 & 0{,}547 & 0{,}48 & 0{,}63 & 0{,}788 $\pm$ 0{,}029 & 0{,}786 \\
+SVM & 0{,}509 $\pm$ 0{,}111 & 0{,}545 & 0{,}45 & 0{,}69 & 0{,}776 $\pm$ 0{,}036 & 0{,}810 \\
+AdaBoost & 0{,}463 $\pm$ 0{,}055 & 0{,}514 & 0{,}45 & 0{,}60 & 0{,}778 $\pm$ 0{,}042 & 0{,}782 \\
+KNN & 0{,}348 $\pm$ 0{,}098 & 0{,}483 & 0{,}35 & 0{,}78 & 0{,}723 $\pm$ 0{,}032 & 0{,}808 \\
+Arbre de décision & 0{,}330 $\pm$ 0{,}151 & 0{,}386 & 0{,}28 & 0{,}61 & 0{,}667 $\pm$ 0{,}050 & 0{,}716 \\
+Forêt aléatoire & 0{,}293 $\pm$ 0{,}069 & 0{,}380 & 0{,}25 & 0{,}79 & 0{,}787 $\pm$ 0{,}043 & 0{,}808 \\
+\multicolumn{7}{@{}l}{\todo{ajouter la ligne XGBoost après l’exécution du notebook avec xgboost installé}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\linewidth]{figures/fig4_comparaison_f1.png}
+\caption{F1 de la classe \og mauvais risque \fg{} par algorithme sur le jeu de test (seuil $0{,}5$)}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{figures/fig5_distributions.png}
+\caption{Distributions de la durée, du montant et de l’âge selon le risque}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig6_variation_hyperparametres.png}
+\caption{Effet de $C$ (régression logistique) et de $k$ (KNN) sur le F1 en validation croisée}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.5\linewidth]{figures/fig7_seuil.png}
+\caption{F1 en validation croisée selon le seuil de décision (régression logistique)}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/fig8_coefficients.png}
+\caption{Les 16 coefficients les plus forts de la régression logistique (variables standardisées)}
+\end{figure}
+
+\section{Déclaration des outils d’IA}
+\begin{table}[H]
+\centering\small
+\caption{Ressources et outils d’IA utilisés}
+\begin{tabularx}{\linewidth}{@{}p{2.6cm}YYY@{}}
+\toprule
+Outil ou ressource & Usage précis & Parties concernées & Vérification effectuée \\
+\midrule
+Claude (Anthropic), novembre 2026 & Structuration du notebook et du rapport, rédaction du code Python (préparation, modèles, évaluation, graphiques) et des textes du rapport & Toutes les sections ; code du notebook & \todo{ce que vous avez relu, exécuté, compris et modifié vous-même} \\
+Support de cours (Tp\_ML.ipynb), documentation scikit-learn & Algorithmes et hyperparamètres de départ, API & Sections~\ref{sec:algo} et~\ref{sec:proto} & Exécution du code et relecture des résultats \\
+\bottomrule
+\end{tabularx}
+\end{table}
+\todo{préciser les parties rédigées sans IA, ou adapter ce tableau à votre usage réel}
+
+\end{document}
