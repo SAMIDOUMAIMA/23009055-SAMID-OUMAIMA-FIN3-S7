@@ -1,9 +1,0 @@
-# Environnement testé : Python 3.13 (compatible Python >= 3.10)
-numpy>=1.26
-pandas>=2.1
-scikit-learn>=1.4
-matplotlib>=3.8
-openpyxl>=3.1      # lecture du fichier Excel par pandas
-xgboost>=2.0       # algorithme 5.9 du notebook
-jupyter>=1.0       # exécution du notebook
-nbconvert>=7.0     # export PDF / HTML du compte rendu
